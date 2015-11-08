@@ -1,0 +1,6 @@
+Django==1.8.1
+djangorestframework==3.1.1
+project_runpy
+psycopg2
+django-cors-headers==1.1.0
+django-unslashed>=0.3.0

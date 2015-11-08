@@ -1,0 +1,65 @@
+datastore:
+  image: busybox
+  volumes:
+      - /var/lib/postgresql/data
+  command: /bin/true
+
+rdb:
+  build: postgis/
+  volumes_from:
+    - datastore
+  environment:
+    - POSTGRES_PASSWORD=postgres
+
+api:
+  build: api/
+  # works reasonably well but like the script solution better:
+  # command: bash -c "sleep 8 && python3 /react_tutorial/api/manage.py migrate && python3 /react_tutorial/api/manage.py runserver 0.0.0.0:8000"
+  # possibly replace the script with sth like: http://brunorocha.org/python/dealing-with-linked-containers-dependency-in-docker-compose.html
+  command: ./setup.sh
+  volumes:
+  - ./api:/react_tutorial/api
+  environment:
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=postgres
+    - DB_NAME=viquedata
+    - POSTGRES_HOST=rdb
+    - POSTGRES_PORT=5432
+  ports:
+  - "8000:8000"
+  links:
+  - rdb
+  - ssh
+
+#apissh:
+#  build: api/
+#  # now using supervisord
+#  # command: ./setup.sh
+#  volumes:
+#  - ./api:/react_tutorial/api
+#  environment:
+#    - POSTGRES_USER=postgres
+#    - POSTGRES_PASSWORD=postgres
+#    - DB_NAME=viquedata
+#    - POSTGRES_HOST=rdb
+#    - POSTGRES_PORT=5432
+#  ports:
+#  - "8000:8000"
+#  - "2223:22"
+#  links:
+#  - rdb
+
+# insecure; for dev only
+# actually only needed during dev for remnote debugging with pycharm
+# see https://github.com/jeroenpeeters/docker-ssh
+# provides set -e CONTAINER to the running container name yoiu want to ssh into
+ssh:
+  image: jeroenpeeters/docker-ssh
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - /usr/bin/docker:/usr/bin/docker
+  environment:
+    - CONTAINER=reacttutorial_api_run_1
+    - AUTH_MECHANISM=noAuth
+  ports:
+  - "2222:22"
